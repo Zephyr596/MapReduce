@@ -170,10 +170,10 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
 
     //Debug
     for(int i = 0; i < num_reducers; i++) {
-        printf("Reducer number: $d\n", i);
+        printf("Reducer number: %d\n", i);
         for(int j = 0; j < pairCountInPartition[i]; j++) {
-            printf("$s ", (partitions[i][j].key));
-            printf("$s\n", (partitions[i][j].value));
+            printf("%s ", (partitions[i][j].key));
+            printf("%s\n", (partitions[i][j].value));
         }
     }
 
