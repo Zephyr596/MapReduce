@@ -133,6 +133,145 @@ void *Reduce_thread(void *arg) {
         }
         while(cur != NULL) {
             hm[partition_number].sorted[count] = *cur;
+            count++;
+            cur = cur->next;
         }
     }
+
+    qsort(hm[partition_number].sorted, hm[partition_number].key_num, sizeof(k_node), compareStr);
+
+    for(int i = 0; i < count; i++) {
+        printf("%s ",hm[partition_number].sorted[i].key);
+    }
+
+    for(int i = 0; i < hm[partition_number].key_num; i++) {
+        char* key = hm[partition_number].sorted[i].key;
+        r(key, get_func, partition_number);
+    }
+
+    // Free the data on heap
+    // Free all nodes;
+    for(int i = 0; i < NUM_MAPS; i++) {
+        k_node *cur = hm[partition_number].map[i].head;
+        if(cur == NULL) {
+            continue;
+        }
+        while(cur != NULL) {
+            free(cur->key);
+            v_node* vcur = cur->head;
+            while(vcur != NULL) {
+                free(vcur->value);
+                vcur->value = NULL;
+                v_node *temp = vcur->next;
+                free(vcur);
+                vcur = temp;
+            }
+            vcur = NULL;
+            k_node* tempK = cur->next;
+            free(cur);
+            cur = tempK;
+        }
+        cur = NULL;
+    }
+    free(hm[partition_number].sorted);
+    hm[partition_number].sorted = NULL;
+
+    return NULL;
 }
+
+void MR_Emit(char *key, char *value) {
+
+    unsigned long partition_number = (*partitioner)(key, NUM_REDUCER);
+    unsigned long map_number = MR_DefaultHashPartition(key, NUM_MAPS);
+
+    pthread_mutex_init(&hm[partition_number][map_number].lock);
+    k_node *temp = hm[partition_number].map[map_number].head;
+
+    while(temp != NULL) {
+        if(strcmp(temp->key, key) == 0) {
+            break;
+        }
+        temp = temp->next;
+    }
+
+    //create a value node
+    v_node* new_v = malloc(sizeof(v_node));
+    if(new_v == NULL) {
+        perror("malloc");
+        pthread_mutex_unlock(&hm[partition_number].map[map_number].lock);
+
+        return;
+    }
+
+    new_v->value = malloc(20 * sizeof(char));
+    if(new_v->value == NULL) {
+        printf("Error Malloc For Value");
+    }
+    strcpy(new_v->value, value);
+    new_v->next = NULL;
+    // If there is no existing node for same key
+    if(temp == NULL){
+        k_node *new_key = malloc(sizeof(k_node));
+        if(new_key == NULL) {
+            perror("malloc");
+            pthread_mutex_unlock(hm[partition_number].map[map_number].lock);
+            return;
+        }
+        new_key->head = new_v;
+        new_key->next = hm[partition_number].map[map_number].head;
+        hm[partition_number].map[map_number].head = new_key;
+
+        new_key->key = malloc(20 * sizeof(char));
+        if(new_key->key == NULL) {
+            printf("Error Malloc For Value");
+        }
+        strcpy(new_key->key, key);
+        pthread_mutex_lock(&hm[partition_number].lock);
+        hm[partition_number].key_num++;
+        pthread_mutex_unlock(&hm[partition_number].lock);
+    }else {
+        // if there is exsting node for same key
+        new_v->next = temp->head;
+        temp->head = new_v;
+    }
+
+    pthread_mutex_unlock(&hm[partition_number].map[map_number].lock);
+}
+
+unsigned long MR_DeafaultHashPartition(char *key, int num_partitions) {
+    unsigned long hash = 5381;
+    int c;
+    while((c = *key++) != '\0')
+        hash = hash*33 + c;
+    return hash % num_partitions;
+}
+
+void MR_Run(int argc, char *argv[],
+            Mapper map, int num_mappers,
+            Reducer reduce, int num_reducers,
+            Partitioner partition) {
+    init(argc, argv, map, num_reducers, partition, reduce);
+
+    // create map threads;
+    pthread_t mapThreads[num_mappers];
+    for(int i = 0; i < num_mappers; i++) {
+        pthread_create(&mapThreads[i], NULL, Map_thread, NULL);
+    }
+
+    // join waits for the threads to finish
+    for(int i = 0; i < num_mappers; i++) {
+        pthread_join(mapthreads[i], NULL);
+    }
+
+    //create reduce threads
+    pthread_t reduceThreads[num_reducers];
+    for(int i = 0; i < num_reducers; i++) {
+        void* arg = malloc(4);
+        *(int*)arg = j;
+        pthread_create(&reduceThreads[i], NULL, Reduce_thread, arg);
+    }
+
+    for(int i = 0; i < num_reducers; i++) {
+        pthread_join(reducethreads[m], NULL);
+    }
+    }
