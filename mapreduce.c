@@ -64,6 +64,22 @@ void* Map_thread(void *arg)
 
 
 // Reducer_thread routine
+
+//    get_next function
+char* get_next(char *key, int partition_number)
+{
+    int num = numberOfAccessInPartition[partition_number];
+    if(num < pairCountInPartition[partition_number] && 
+        strcmp(key, partitions[partition_number][num].key) == 0)
+    {
+        numberOfAccessInPartition[partition_number]++;
+        return partitions[partition_number][num].value;
+    }else
+    {
+        return NULL;
+    }
+}
+
 void* Reduce_thread(void *arg)
 {
     int* partitionNumber = (int *)arg;
@@ -71,7 +87,25 @@ void* Reduce_thread(void *arg)
     {
         if(i == numberOfAccessInPartition[*partitionNumber])
         {
-            r(partitions[*partitionNumber][i].key, ])
+            r(partitions[*partitionNumber][i].key, get_next, *partitionNumber);
         }
     }
+    return arg;
+}// End of Reduce_Thread
+
+// Compare function
+//     Sort the buckets by key and then by value
+int compare(const void* pairs1, const void* pairs2)
+{
+    struct pairs *p1 = (struct pairs*)pairs1;
+    struct pairs *p2 = (struct pairs*)pairs2;
+
+    if(strcmp(p1->key, p2->key) == 0)
+    {
+        return strcmp(p1->value, p2->value);
+    }
+
+    return strcmp(p1->key, p2->key);
 }
+
+//      Sort files by increasing
