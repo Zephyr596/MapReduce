@@ -116,7 +116,7 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
     if(argc - 1 < num_mappers) {
         num_mappers = argc - 1;
     }
-
+    printf("Starting...\n");
     // Initialising all variables
     pthread_t mapThreads[num_mappers];
     pthread_t reduceThreads[num_reducers];
@@ -143,26 +143,34 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
         arrayPosition[i] = i;
         numberOfAccessInPartition[i] = 0;
     }
-
+    printf("Initialising the arrays needed to store the key value pairs in the partitions\n");
     // Copying files for sorting in struct
+    printf("====================\n");
     for(int i = 0; i < argc-1; i++) {
         fileNames[i].name = (char*)malloc((strlen(argv[i+1])+1) * sizeof(char));
         strcpy(fileNames[i].name, argv[i+1]);
+        printf("%s\n",fileNames[i].name);
     }
-
     // Sorting files as shortest File first
     qsort(&fileNames[0], argc-1, sizeof(struct files), compareFiles);
 
+    // Debug
+    printf("=====After Sort=====\n");
+    for(int i = 0; i < argc-1; i++) {
+        printf("%s\n", fileNames[i].name);
+    }
+    printf("====================\n");
     // Creating the threads for the number of mappers
     for(int i = 0; i < num_mappers; i++) {
         pthread_create(&mapThreads[i], NULL, mapperHelper, NULL);
+        printf("Thread%d has created\n",i);
     }
 
     // Waiting for threads to finish
     for(int i = 0; i < num_mappers; i++) {
         pthread_join(mapThreads[i], NULL);
     }
-
+    printf("Threads has finished.\n");
     // Sorting the partitions
     for(int i = 0; i < num_reducers; i++) {
         qsort(partitions[i], pairCountInPartition[i], sizeof(struct pairs), compare);
@@ -229,3 +237,4 @@ unsigned long MR_DefaultHashPartition(char *key, int num_partitions) {
     }
     return hash % num_partitions;
 }
+
