@@ -38,10 +38,15 @@ void* mapperHelper(void *arg){
         if(filesProcessed < totalFiles) {
             filename = fileNames[filesProcessed].name;
             filesProcessed++;
+            // printf("filesProcessed:%d\n",filesProcessed);
         }
         pthread_mutex_unlock(&fileLock);
         if(filename != NULL)
+        {
+            // printf("Starting process file\n");
             m(filename);
+            // printf("End process file\n");
+        }
     }
     return arg;
 }
@@ -108,7 +113,8 @@ void MR_Emit(char *key, char *value) {
     strcpy(partitions[hashPartitionNumber][curCount - 1].key, key);
     partitions[hashPartitionNumber][curCount - 1].value = (char *)malloc((strlen(value) + 1) * sizeof(char));
     strcpy(partitions[hashPartitionNumber][curCount - 1].value, value);
-    pthread_mutex_lock(&lock);
+    // printf("End Emit\n");
+    pthread_mutex_unlock(&lock);
 }
 
 void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce, int num_reducers, Partitioner partition) {
@@ -116,7 +122,7 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
     if(argc - 1 < num_mappers) {
         num_mappers = argc - 1;
     }
-    printf("Starting...\n");
+    // printf("Starting...\n");
     // Initialising all variables
     pthread_t mapThreads[num_mappers];
     pthread_t reduceThreads[num_reducers];
@@ -143,47 +149,47 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
         arrayPosition[i] = i;
         numberOfAccessInPartition[i] = 0;
     }
-    printf("Initialising the arrays needed to store the key value pairs in the partitions\n");
+    // printf("Initialising the arrays needed to store the key value pairs in the partitions\n");
     // Copying files for sorting in struct
-    printf("====================\n");
+    // printf("====================\n");
     for(int i = 0; i < argc-1; i++) {
         fileNames[i].name = (char*)malloc((strlen(argv[i+1])+1) * sizeof(char));
         strcpy(fileNames[i].name, argv[i+1]);
-        printf("%s\n",fileNames[i].name);
+        // printf("%s\n",fileNames[i].name);
     }
     // Sorting files as shortest File first
     qsort(&fileNames[0], argc-1, sizeof(struct files), compareFiles);
 
     // Debug
-    printf("=====After Sort=====\n");
+    // printf("=====After Sort=====\n");
     for(int i = 0; i < argc-1; i++) {
         printf("%s\n", fileNames[i].name);
     }
-    printf("====================\n");
+    // printf("====================\n");
     // Creating the threads for the number of mappers
     for(int i = 0; i < num_mappers; i++) {
         pthread_create(&mapThreads[i], NULL, mapperHelper, NULL);
-        printf("Thread%d has created\n",i);
+        // printf("Thread%d has created\n",i);
     }
 
     // Waiting for threads to finish
     for(int i = 0; i < num_mappers; i++) {
         pthread_join(mapThreads[i], NULL);
     }
-    printf("Threads has finished.\n");
+    // printf("Threads has finished.\n");
     // Sorting the partitions
     for(int i = 0; i < num_reducers; i++) {
         qsort(partitions[i], pairCountInPartition[i], sizeof(struct pairs), compare);
     }
 
     //Debug
-    for(int i = 0; i < num_reducers; i++) {
-        printf("Reducer number: %d\n", i);
-        for(int j = 0; j < pairCountInPartition[i]; j++) {
-            printf("%s ", (partitions[i][j].key));
-            printf("%s\n", (partitions[i][j].value));
-        }
-    }
+    // for(int i = 0; i < num_reducers; i++) {
+    //     printf("Reducer number: %d\n", i);
+    //     for(int j = 0; j < pairCountInPartition[i]; j++) {
+    //         printf("%s ", (partitions[i][j].key));
+    //         printf("%s\n", (partitions[i][j].value));
+    //     }
+    // }
 
     //Creating the threads for the number of reducers
     for(int i = 0; i < num_reducers; i++) {

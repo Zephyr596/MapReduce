@@ -6,6 +6,7 @@
 
 void Map(char *file_name)
 {
+    // printf("Map function has started...\n");
     FILE *fp = fopen(file_name, "r");
     assert(fp != NULL);
 
@@ -14,10 +15,13 @@ void Map(char *file_name)
     while (getline(&line, &size, fp) != -1)
     {
         char *token, *dummy = line;
+        // printf("dummy:%s\n", dummy);
         while ((token = strsep(&dummy, " \t\n\r")) != NULL)
         {
+            // printf("token:%s\n",token);
             MR_Emit(token, "1");
         }
+        // printf("break!!!\n");
     }
     free(line);
     fclose(fp);
