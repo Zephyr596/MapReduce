@@ -101,6 +101,7 @@ void MR_Emit(char *key, char *value) {
     pthread_mutex_lock(&lock);
     // Getting the partition number
     unsigned long hashPartitionNumber = p(key, numberPartitions);
+    // printf("hashNumber:%lu\n",hashPartitionNumber);
     pairCountInPartition[hashPartitionNumber]++;
     int curCount = pairCountInPartition[hashPartitionNumber];
     // Checking if allocated memory has been exceeded,if yes allocating more memory
@@ -162,9 +163,9 @@ void MR_Run(int argc, char *argv[], Mapper map, int num_mappers, Reducer reduce,
 
     // Debug
     // printf("=====After Sort=====\n");
-    for(int i = 0; i < argc-1; i++) {
-        printf("%s\n", fileNames[i].name);
-    }
+    //for(int i = 0; i < argc-1; i++) {
+    //    printf("%s\n", fileNames[i].name);
+    //}
     // printf("====================\n");
     // Creating the threads for the number of mappers
     for(int i = 0; i < num_mappers; i++) {
